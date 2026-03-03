@@ -17,5 +17,12 @@ lint:
 clean:
 	rm -rf $(BIN_DIR)
 
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+  INSTALL_DIR := /usr/local/bin
+else
+  INSTALL_DIR := /usr/bin
+endif
+
 install: build
-	cp $(BINARY) $(GOPATH)/bin/hey 2>/dev/null || cp $(BINARY) $(HOME)/go/bin/hey
+	sudo install $(BINARY) $(INSTALL_DIR)/hey

@@ -1,0 +1,108 @@
+# hey-cli
+
+A CLI and TUI for [HEY](https://hey.com). Read and send emails, manage boxes, calendars, todos, habits, time tracking, and journal entries — all from your terminal.
+
+## Install
+
+Requires Go 1.25+.
+
+```bash
+make build        # build to ./bin/hey
+sudo make install # install to /usr/local/bin (macOS) or /usr/bin (Linux)
+```
+
+## Authentication
+
+```bash
+# OAuth password grant (primary method)
+hey login --client-id CLIENT_ID --client-secret SECRET
+
+# Or use a pre-generated token
+hey login --token TOKEN
+
+# Or use a browser session cookie
+hey login --cookie COOKIE
+```
+
+Tokens refresh automatically on expiry. Credentials are stored in `~/.config/hey-cli/config.json`.
+
+```bash
+hey status  # check auth status
+hey logout  # clear credentials
+```
+
+## TUI
+
+Run `hey` to launch the interactive terminal UI.
+
+Navigate between mailboxes, postings, and full email threads. Use Enter to drill in, Escape/Backspace to go back, and `/` to filter lists.
+
+## CLI Commands
+
+All commands support `--json` for raw JSON output and `--base-url` to override the server URL.
+
+### Email
+
+```bash
+hey boxes                          # list mailboxes
+hey box imbox                      # list postings in a box (by name or ID)
+hey topic 123                      # read a full email thread
+hey entry 456                      # read a single entry
+hey reply 456 -m "Thanks!"        # reply to an entry (or omit -m to open $EDITOR)
+hey compose --to user@example.com --subject "Hello"  # compose a new message
+hey drafts                         # list drafts
+```
+
+### Calendars
+
+```bash
+hey calendars                      # list calendars
+hey recordings 1 --from 2026-01-01 --to 2026-01-31  # list events in a calendar
+```
+
+### Todos
+
+```bash
+hey todo list                      # list todos
+hey todo add --title "Buy milk"    # create a todo
+hey todo complete 1                # mark done
+hey todo uncomplete 1              # mark undone
+hey todo delete 1                  # delete
+```
+
+### Habits
+
+```bash
+hey habit complete 1               # mark habit done (today or --date YYYY-MM-DD)
+hey habit uncomplete 1             # undo habit completion
+```
+
+### Time tracking
+
+```bash
+hey timetrack start                # start tracking
+hey timetrack stop                 # stop tracking
+hey timetrack current              # show active track
+hey timetrack list                 # list all tracks
+```
+
+### Journal
+
+```bash
+hey journal list                   # list entries
+hey journal read                   # read today's entry (or pass YYYY-MM-DD)
+hey journal write --content "..."  # write today's entry (or omit --content for $EDITOR)
+```
+
+## Development
+
+```bash
+make build   # build binary
+make test    # run tests
+make lint    # run golangci-lint
+make clean   # remove build artifacts
+```
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE.md](LICENSE.md) for details.
