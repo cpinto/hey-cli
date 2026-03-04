@@ -64,7 +64,10 @@ func (c *topicCommand) run(cmd *cobra.Command, args []string) error {
 		if e.Summary != "" {
 			fmt.Println(e.Summary)
 		}
-		if e.Body != "" {
+		if htmlOutput && e.BodyHTML != "" {
+			fmt.Println()
+			fmt.Println(e.BodyHTML)
+		} else if e.Body != "" {
 			fmt.Println()
 			fmt.Println(e.Body)
 		}

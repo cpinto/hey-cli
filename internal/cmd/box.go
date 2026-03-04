@@ -72,7 +72,11 @@ func (c *boxCommand) run(cmd *cobra.Command, args []string) error {
 		if len(p.CreatedAt) >= 10 {
 			date = p.CreatedAt[:10]
 		}
-		table.addRow([]string{fmt.Sprintf("%d", p.ID), p.Creator.Name, truncate(p.Summary, 60), date})
+		displayID := p.ID
+		if tid := p.ResolveTopicID(); tid != 0 {
+			displayID = tid
+		}
+		table.addRow([]string{fmt.Sprintf("%d", displayID), p.Creator.Name, truncate(p.Summary, 60), date})
 	}
 	table.print()
 	return nil

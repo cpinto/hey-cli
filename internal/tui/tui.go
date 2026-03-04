@@ -277,12 +277,9 @@ func (m *model) updateBox(msg tea.Msg) tea.Cmd {
 			if m.box.list.FilterState() != list.Filtering {
 				posting := m.box.selectedPosting()
 				if posting != nil {
-					topicID := posting.ID
-					if posting.TopicID != 0 {
-						topicID = posting.TopicID
-					}
-					if posting.Topic != nil {
-						topicID = posting.Topic.ID
+					topicID := posting.ResolveTopicID()
+					if topicID == 0 {
+						topicID = posting.ID
 					}
 					m.loading = true
 					return m.fetchTopic(topicID, posting.Summary)

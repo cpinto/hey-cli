@@ -63,10 +63,12 @@ The TUI renders inline images using the Kitty graphics protocol's Unicode Placeh
 
 This works in Kitty and Ghostty. Other terminals show the text content normally (placeholders are invisible).
 
-### Server implementation
+### API documentation
 
-You can read through the server implementation to understand how the API works.
-The server code is located at ~/Work/basecamp/haystack/
+If you are unsure what the API endpoints are, what they expect or what they respond to you can read through the server implementation to understand how the API works.
+
+The server code is located at `~/Work/basecamp/haystack/`, feel free to read it whenever you need information about the API.
+
 If you don't understand how the routes are laid out you can call rails routes in that directory to get a list of all the routes and their corresponding controller actions.
 
 ### Testing

@@ -22,6 +22,7 @@ type Entry struct {
 	Kind                  string    `json:"kind"`
 	AppURL                string    `json:"app_url"`
 	Body                  string    `json:"body,omitempty"`
+	BodyHTML              string    `json:"-"`
 	Recipients            []Contact `json:"recipients,omitempty"`
 }
 
