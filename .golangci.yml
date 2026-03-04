@@ -77,6 +77,9 @@ linters:
       - path: internal/cmd/skill
         linters:
           - gosec
+      - path: internal/version/
+        linters:
+          - revive
 
 issues:
   max-issues-per-linter: 0

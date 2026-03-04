@@ -75,7 +75,7 @@ func Execute() {
 	rootCmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Output raw JSON")
 	rootCmd.PersistentFlags().BoolVar(&htmlOutput, "html", false, "Output raw HTML (for commands that return HTML content)")
 	rootCmd.PersistentFlags().BoolVar(&agentOutput, "agent", false, "")
-	rootCmd.PersistentFlags().MarkHidden("agent")
+	_ = rootCmd.PersistentFlags().MarkHidden("agent")
 	rootCmd.PersistentFlags().StringVar(&baseURL, "base-url", "", "Override server URL")
 
 	rootCmd.AddCommand(newAuthCommand().cmd)
@@ -112,7 +112,7 @@ func Execute() {
 				obj["error"] = apiErr.Message
 				obj["status"] = apiErr.StatusCode
 			}
-			json.NewEncoder(os.Stdout).Encode(obj)
+			_ = json.NewEncoder(os.Stdout).Encode(obj)
 		} else {
 			fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 		}
@@ -120,7 +120,7 @@ func Execute() {
 	}
 }
 
-func agentHelpFunc(cmd *cobra.Command, args []string) {
+func agentHelpFunc(cmd *cobra.Command, _ []string) {
 	type flagInfo struct {
 		Name string `json:"name"`
 		Type string `json:"type"`
@@ -156,7 +156,7 @@ func agentHelpFunc(cmd *cobra.Command, args []string) {
 		Flags:       flags,
 		Subcommands: subs,
 	}
-	json.NewEncoder(os.Stdout).Encode(s)
+	_ = json.NewEncoder(os.Stdout).Encode(s)
 }
 
 func requireAuth() error {
