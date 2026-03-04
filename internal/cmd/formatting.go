@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mattn/go-runewidth"
 	"golang.org/x/term"
 )
 
@@ -45,7 +46,10 @@ func (t *table) print() {
 				cellStyle = bold
 			}
 
-			pad := t.columnWidths[i] - len(cell)
+			pad := t.columnWidths[i] - runewidth.StringWidth(cell)
+			if pad < 0 {
+				pad = 0
+			}
 			fmt.Printf("%s%s  ", cellStyle.format(cell), strings.Repeat(" ", pad))
 		}
 		fmt.Println()
@@ -54,8 +58,9 @@ func (t *table) print() {
 
 func (t *table) updateColumnWidths(row []string) {
 	for i, cell := range row {
-		if len(cell) > t.columnWidths[i] {
-			t.columnWidths[i] = len(cell)
+		w := runewidth.StringWidth(cell)
+		if w > t.columnWidths[i] {
+			t.columnWidths[i] = w
 		}
 	}
 }
@@ -94,10 +99,10 @@ func printRawJSON(data []byte) error {
 }
 
 func truncate(s string, max int) string {
-	if len(s) > max {
-		return s[:max-3] + "..."
+	if runewidth.StringWidth(s) <= max {
+		return s
 	}
-	return s
+	return runewidth.Truncate(s, max, "...")
 }
 
 func stdinIsTerminal() bool {
