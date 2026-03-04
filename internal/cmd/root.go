@@ -25,8 +25,18 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:           "hey",
-	Short:         "CLI for the Haystack (HEY) email service",
+	Use:   "hey",
+	Short: "CLI for HEY",
+	Long: `A CLI for HEY
+⠀⠀⠀⠀⠀⠀⣰⠲⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⡟⢳⡀⣏⠀⠘⣆⠀⠀⠀⠀⠀⣤⣤⡄⠀⠀⢠⣤⣤⣤⣤⣤⣤⣤⣤⠀⠀⢀⣤⣤⡄⠀
+⠀⣴⢄⢳⠀⠹⣿⠀⠀⠸⣆⠴⠒⢢⡀⢻⣿⡇⠀⠀⢸⣿⣿⡟⠛⠛⠛⢿⣿⣇⠀⣼⣿⡟⠀⠀
+⠀⢻⠈⠻⣧⠀⠹⣇⠀⢰⣿⠀⠀⠀⡇⢸⣿⣷⣶⣶⣾⣿⣿⣷⣶⣶⠀⠈⢿⣿⣼⣿⡟⠀⠀⠀
+⣶⠺⣧⡀⠙⢧⠀⠉⠀⣸⢸⡆⠀⢸⠁⣼⣿⡏⠉⠉⢹⣿⣿⡏⠉⠉⠀⠀⠈⣿⣿⡟⠀⠀⠀⠀
+⠘⣆⠈⠳⠀⠀⠀⠀⠀⢻⢸⠇⢀⡏⠀⣿⣿⡇⠀⠀⢸⣿⣿⣿⣶⣶⣶⡆⠀⣿⣿⡇⠀⠀⠀⠀
+⠀⠈⠳⣄⡀⠀⠀⠀⠀⠈⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠉⠙⠚⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+	`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
