@@ -86,6 +86,9 @@ func (m calendarModel) selectedRecording() *models.Recording {
 	if item == nil {
 		return nil
 	}
-	ri := item.(recordingItem)
+	ri, ok := item.(recordingItem)
+	if !ok {
+		return nil
+	}
 	return &ri.recording
 }

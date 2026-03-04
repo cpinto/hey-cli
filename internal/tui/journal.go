@@ -80,6 +80,9 @@ func (m journalModel) selectedRecording() *models.Recording {
 	if item == nil {
 		return nil
 	}
-	ji := item.(journalItem)
+	ji, ok := item.(journalItem)
+	if !ok {
+		return nil
+	}
 	return &ji.recording
 }

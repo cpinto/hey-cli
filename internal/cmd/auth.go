@@ -121,7 +121,7 @@ func newAuthStatusCommand() *cobra.Command {
 			creds, err := store.Load(authMgr.CredentialKey())
 			if err != nil {
 				fmt.Println("Status:    Not logged in")
-				return nil
+				return nil //nolint:nilerr // "not logged in" is a valid status, not an error
 			}
 
 			if creds.AccessToken == "" && creds.SessionCookie == "" {

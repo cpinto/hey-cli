@@ -53,6 +53,9 @@ func (m boxesModel) selectedBox() *models.Box {
 	if item == nil {
 		return nil
 	}
-	bi := item.(boxItem)
+	bi, ok := item.(boxItem)
+	if !ok {
+		return nil
+	}
 	return &bi.box
 }

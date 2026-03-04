@@ -53,6 +53,9 @@ func (m calendarsModel) selectedCalendar() *models.Calendar {
 	if item == nil {
 		return nil
 	}
-	ci := item.(calendarItem)
+	ci, ok := item.(calendarItem)
+	if !ok {
+		return nil
+	}
 	return &ci.calendar
 }

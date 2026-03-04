@@ -59,7 +59,7 @@ var rootCmd = &cobra.Command{
 		apiClient = client.New(cfg.BaseURL, authMgr)
 
 		// Migrate old config credentials to new store
-		migrateOldCredentials(configDir)
+		migrateOldCredentials()
 
 		return nil
 	},
@@ -168,7 +168,7 @@ func requireAuth() error {
 
 // migrateOldCredentials migrates credentials from the old config.json format
 // to the new credential store (keyring or credentials.json).
-func migrateOldCredentials(configDir string) {
+func migrateOldCredentials() {
 	old, err := config.LoadOld()
 	if err != nil {
 		return
