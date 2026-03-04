@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"hey-cli/internal/auth"
+	"github.com/basecamp/hey-cli/internal/auth"
 )
 
 type APIError struct {

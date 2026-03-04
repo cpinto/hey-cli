@@ -8,7 +8,7 @@ import (
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 
-	"hey-cli/internal/models"
+	"github.com/basecamp/hey-cli/internal/models"
 )
 
 type recordingItem struct {

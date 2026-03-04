@@ -10,9 +10,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"hey-cli/internal/auth"
-	"hey-cli/internal/client"
-	"hey-cli/internal/config"
+	"github.com/basecamp/hey-cli/internal/auth"
+	"github.com/basecamp/hey-cli/internal/client"
+	"github.com/basecamp/hey-cli/internal/config"
 )
 
 var (

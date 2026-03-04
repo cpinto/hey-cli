@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"hey-cli/internal/htmlutil"
-	"hey-cli/internal/models"
+	"github.com/basecamp/hey-cli/internal/htmlutil"
+	"github.com/basecamp/hey-cli/internal/models"
 )
 
 func (c *Client) GetEntry(id string) (models.Entry, error) {

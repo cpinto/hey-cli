@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"hey-cli/internal/auth"
+	"github.com/basecamp/hey-cli/internal/auth"
 )
 
 type authCommand struct {

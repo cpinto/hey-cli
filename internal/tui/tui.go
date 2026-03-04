@@ -11,8 +11,8 @@ import (
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 
-	"hey-cli/internal/client"
-	"hey-cli/internal/models"
+	"github.com/basecamp/hey-cli/internal/client"
+	"github.com/basecamp/hey-cli/internal/models"
 )
 
 type viewState int
@@ -85,9 +85,9 @@ type model struct {
 
 	detail detailModel
 
-	loading  bool
-	err      error
-	lastKey  string // debug: last key event received
+	loading bool
+	err     error
+	lastKey string // debug: last key event received
 }
 
 func newModel(c *client.Client) model {
