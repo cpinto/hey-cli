@@ -85,6 +85,7 @@ func Execute() {
 	rootCmd.AddCommand(newTimetrackCommand().cmd)
 	rootCmd.AddCommand(newJournalCommand().cmd)
 	rootCmd.AddCommand(newTuiCommand().cmd)
+	rootCmd.AddCommand(newSkillCommand().cmd)
 
 	err := rootCmd.Execute()
 	if err != nil {

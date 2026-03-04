@@ -116,6 +116,14 @@ hey journal read                   # read today's entry (or pass YYYY-MM-DD)
 hey journal write --content "..."  # write today's entry (or omit --content for $EDITOR)
 ```
 
+## Agent Skill
+
+hey-cli ships with an embedded agent skill so your agent can interact with HEY on your behalf.
+
+```bash
+hey skill install   # install the skill globally for your agent
+```
+
 ## Development
 
 ```bash
