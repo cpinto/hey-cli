@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/basecamp/hey-cli/internal/auth"
+	"github.com/basecamp/hey-cli/internal/version"
 )
 
 type APIError struct {
@@ -69,6 +70,7 @@ func (c *Client) doRequestAccept(method, path string, body io.Reader, contentTyp
 	}
 
 	req.Header.Set("Accept", accept)
+	req.Header.Set("User-Agent", version.UserAgent())
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
