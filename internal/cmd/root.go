@@ -13,7 +13,6 @@ import (
 	"hey-cli/internal/auth"
 	"hey-cli/internal/client"
 	"hey-cli/internal/config"
-	"hey-cli/internal/tui"
 )
 
 var (
@@ -61,10 +60,7 @@ var rootCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := requireAuth(); err != nil {
-			return err
-		}
-		return tui.Run(apiClient)
+		return cmd.Help()
 	},
 }
 
@@ -88,6 +84,7 @@ func Execute() {
 	rootCmd.AddCommand(newHabitCommand().cmd)
 	rootCmd.AddCommand(newTimetrackCommand().cmd)
 	rootCmd.AddCommand(newJournalCommand().cmd)
+	rootCmd.AddCommand(newTuiCommand().cmd)
 
 	err := rootCmd.Execute()
 	if err != nil {
