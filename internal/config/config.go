@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/basecamp/hey-cli/internal/apierr"
 )
@@ -248,7 +249,7 @@ func validateBaseURL(base string) error {
 	}
 	// Enforce HTTPS for non-localhost
 	host := u.Hostname()
-	if u.Scheme != "https" && host != "localhost" && host != "127.0.0.1" && host != "::1" {
+	if u.Scheme != "https" && host != "localhost" && host != "127.0.0.1" && host != "::1" && !strings.HasSuffix(host, ".localhost") {
 		return apierr.ErrUsage(fmt.Sprintf("base URL must use HTTPS (got %q)", base))
 	}
 	return nil

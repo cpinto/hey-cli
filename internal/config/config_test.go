@@ -101,6 +101,7 @@ func TestValidateBaseURL(t *testing.T) {
 		{"https://app.hey.com", false},
 		{"http://localhost:3000", false},
 		{"http://127.0.0.1:3000", false},
+		{"http://app.hey.localhost:3003", false},
 		{"http://insecure.example.com", true},
 		{"app.hey.com", true},        // bare path, no scheme
 		{"http://[::1]:3000", false}, // IPv6 loopback
