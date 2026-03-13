@@ -6,9 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/basecamp/hey-sdk/go/pkg/generated"
-	"github.com/basecamp/hey-sdk/go/pkg/types"
-
 	"github.com/basecamp/hey-cli/internal/output"
 )
 
@@ -170,25 +167,14 @@ func (c *todoAddCommand) run(cmd *cobra.Command, args []string) error {
 			"hey todo add \"Buy milk\"  or  hey todo add --title \"Buy milk\"")
 	}
 
-	body := generated.CreateCalendarTodoJSONRequestBody{
-		Title: title,
-	}
-	if c.date != "" {
-		d, err := types.ParseDate(c.date)
-		if err != nil {
-			return output.ErrUsage(fmt.Sprintf("invalid date: %s", c.date))
-		}
-		body.StartsOn = d
-	}
-
 	ctx := cmd.Context()
-	result, err := sdk.CalendarTodos().Create(ctx, body)
+	result, err := sdk.CalendarTodos().Create(ctx, title, c.date)
 	if err != nil {
 		return convertSDKError(err)
 	}
 
 	if writer.IsStyled() {
-		fmt.Fprintf(cmd.OutOrStdout(), "Todo created.%s\n", extractMutationInfoFromResult(result))
+		fmt.Fprintln(cmd.OutOrStdout(), "Todo created.")
 		return nil
 	}
 

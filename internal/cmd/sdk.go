@@ -170,7 +170,7 @@ const (
 	personalRecordingsLookaheadYears = 1
 )
 
-// listPersonalRecordings fetches all recordings from the user's personal calendar
+// listPersonalRecordings fetches recordings from the user's personal calendar
 // with a lookback/lookahead window matching the old CLI behavior.
 func listPersonalRecordings(ctx context.Context) (*generated.CalendarRecordingsResponse, error) {
 	payload, err := sdk.Calendars().List(ctx)

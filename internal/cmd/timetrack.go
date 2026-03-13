@@ -63,7 +63,7 @@ func (c *timetrackStartCommand) run(cmd *cobra.Command, args []string) error {
 	}
 
 	if writer.IsStyled() {
-		fmt.Fprintf(cmd.OutOrStdout(), "Time tracking started.%s\n", extractMutationInfoFromResult(result))
+		fmt.Fprintln(cmd.OutOrStdout(), "Time tracking started.")
 		return nil
 	}
 
@@ -115,21 +115,16 @@ func (c *timetrackStopCommand) run(cmd *cobra.Command, args []string) error {
 		return output.ErrNotFound("time track", "active")
 	}
 
-	result, err := sdk.TimeTracks().Stop(ctx, track.Id)
-	if err != nil {
+	if err = sdk.TimeTracks().Stop(ctx, track.Id); err != nil {
 		return convertSDKError(err)
 	}
 
 	if writer.IsStyled() {
-		fmt.Fprintf(cmd.OutOrStdout(), "Time tracking stopped.%s\n", extractMutationInfoFromResult(result))
+		fmt.Fprintln(cmd.OutOrStdout(), "Time tracking stopped.")
 		return nil
 	}
 
-	normalized, nerr := normalizeAny(result)
-	if nerr != nil {
-		return writeOK(nil, output.WithSummary("Time tracking stopped"))
-	}
-	return writeOK(normalized, output.WithSummary("Time tracking stopped"))
+	return writeOK(nil, output.WithSummary("Time tracking stopped"))
 }
 
 // current

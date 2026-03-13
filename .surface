@@ -35,6 +35,7 @@ hey compose --subject
 hey compose --thread-id
 hey compose --to
 hey config
+hey config set
 hey config show
 hey doctor
 hey drafts

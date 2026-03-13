@@ -7,8 +7,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/basecamp/hey-sdk/go/pkg/generated"
-
 	"github.com/basecamp/hey-cli/internal/editor"
 	"github.com/basecamp/hey-cli/internal/output"
 )
@@ -76,20 +74,15 @@ func (c *composeCommand) run(cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := cmd.Context()
-	var result any
 
 	if c.threadID != "" {
 		topicID, err := strconv.ParseInt(c.threadID, 10, 64)
 		if err != nil {
 			return output.ErrUsage(fmt.Sprintf("invalid thread ID: %s", c.threadID))
 		}
-		resp, err := sdk.Messages().CreateTopicMessage(ctx, topicID, generated.CreateTopicMessageJSONRequestBody{
-			Content: message,
-		})
-		if err != nil {
+		if err := sdk.Messages().CreateTopicMessage(ctx, topicID, message); err != nil {
 			return convertSDKError(err)
 		}
-		result = resp
 	} else {
 		to := []string{}
 		if c.to != "" {
@@ -100,25 +93,15 @@ func (c *composeCommand) run(cmd *cobra.Command, args []string) error {
 				}
 			}
 		}
-		resp, err := sdk.Messages().Create(ctx, generated.CreateMessageJSONRequestBody{
-			Subject: c.subject,
-			Content: message,
-			To:      to,
-		})
-		if err != nil {
+		if err := sdk.Messages().Create(ctx, c.subject, message, to); err != nil {
 			return convertSDKError(err)
 		}
-		result = resp
 	}
 
 	if writer.IsStyled() {
-		fmt.Fprintf(cmd.OutOrStdout(), "Message sent.%s\n", extractMutationInfoFromResult(result))
+		fmt.Fprintln(cmd.OutOrStdout(), "Message sent.")
 		return nil
 	}
 
-	normalized, err := normalizeAny(result)
-	if err != nil {
-		return writeOK(nil, output.WithSummary("Message sent"))
-	}
-	return writeOK(normalized, output.WithSummary("Message sent"))
+	return writeOK(nil, output.WithSummary("Message sent"))
 }

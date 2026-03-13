@@ -6,8 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/basecamp/hey-sdk/go/pkg/generated"
-
 	"github.com/basecamp/hey-cli/internal/editor"
 	"github.com/basecamp/hey-cli/internal/htmlutil"
 	"github.com/basecamp/hey-cli/internal/output"
@@ -261,6 +259,7 @@ func (c *journalWriteCommand) run(cmd *cobra.Command, args []string) error {
 			content = args[0]
 		}
 	}
+	ctx := cmd.Context()
 	if content == "" {
 		if !stdinIsTerminal() {
 			var err error
@@ -272,7 +271,6 @@ func (c *journalWriteCommand) run(cmd *cobra.Command, args []string) error {
 				return output.ErrUsage("no content provided (use --content to provide inline, or pipe to stdin)")
 			}
 		} else {
-			ctx := cmd.Context()
 			existing := ""
 			entry, err := sdk.Journal().Get(ctx, date)
 			if err == nil && entry != nil {
@@ -292,24 +290,16 @@ func (c *journalWriteCommand) run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	ctx := cmd.Context()
-	result, err := sdk.Journal().Update(ctx, date, generated.UpdateJournalEntryJSONRequestBody{
-		Body: content,
-	})
-	if err != nil {
+	if err := sdk.Journal().Update(ctx, date, content); err != nil {
 		return convertSDKError(err)
 	}
 
 	if writer.IsStyled() {
-		fmt.Fprintf(cmd.OutOrStdout(), "Journal entry for %s saved.%s\n", date, extractMutationInfoFromResult(result))
+		fmt.Fprintf(cmd.OutOrStdout(), "Journal entry for %s saved.\n", date)
 		return nil
 	}
 
-	normalized, nerr := normalizeAny(result)
-	if nerr != nil {
-		return writeOK(nil, output.WithSummary(fmt.Sprintf("Journal entry for %s saved", date)))
-	}
-	return writeOK(normalized,
+	return writeOK(nil,
 		output.WithSummary(fmt.Sprintf("Journal entry for %s saved", date)),
 		output.WithBreadcrumbs(output.Breadcrumb{
 			Action:      "read",
