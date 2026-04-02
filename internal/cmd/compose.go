@@ -14,6 +14,8 @@ import (
 type composeCommand struct {
 	cmd      *cobra.Command
 	to       string
+	cc       string
+	bcc      string
 	subject  string
 	message  string
 	threadID string
@@ -28,12 +30,15 @@ func newComposeCommand() *composeCommand {
 			"agent_notes": "Creates a new email. Requires --subject. Use --to for new threads or --thread-id for existing ones.",
 		},
 		Example: `  hey compose --to alice@hey.com --subject "Hello" -m "Hi there"
+  hey compose --to alice@hey.com --cc bob@hey.com --bcc carol@hey.com --subject "Hello" -m "Hi"
   hey compose --subject "Update" --thread-id 12345 -m "Thread reply"
   echo "Long message" | hey compose --to bob@hey.com --subject "Report"`,
 		RunE: composeCommand.run,
 	}
 
 	composeCommand.cmd.Flags().StringVar(&composeCommand.to, "to", "", "Recipient email address(es)")
+	composeCommand.cmd.Flags().StringVar(&composeCommand.cc, "cc", "", "CC recipient email address(es)")
+	composeCommand.cmd.Flags().StringVar(&composeCommand.bcc, "bcc", "", "BCC recipient email address(es)")
 	composeCommand.cmd.Flags().StringVar(&composeCommand.subject, "subject", "", "Message subject (required)")
 	composeCommand.cmd.Flags().StringVarP(&composeCommand.message, "message", "m", "", "Message body (or opens $EDITOR)")
 	composeCommand.cmd.Flags().StringVar(&composeCommand.threadID, "thread-id", "", "Thread ID to post message to")
@@ -84,16 +89,10 @@ func (c *composeCommand) run(cmd *cobra.Command, args []string) error {
 			return convertSDKError(err)
 		}
 	} else {
-		to := []string{}
-		if c.to != "" {
-			for _, addr := range strings.Split(c.to, ",") {
-				addr = strings.TrimSpace(addr)
-				if addr != "" {
-					to = append(to, addr)
-				}
-			}
-		}
-		if err := sdk.Messages().Create(ctx, c.subject, message, to); err != nil {
+		to := splitAddresses(c.to)
+		cc := splitAddresses(c.cc)
+		bcc := splitAddresses(c.bcc)
+		if err := sdk.Messages().Create(ctx, c.subject, message, to, cc, bcc); err != nil {
 			return convertSDKError(err)
 		}
 	}
@@ -104,4 +103,18 @@ func (c *composeCommand) run(cmd *cobra.Command, args []string) error {
 	}
 
 	return writeOK(nil, output.WithSummary("Message sent"))
+}
+
+func splitAddresses(s string) []string {
+	if s == "" {
+		return nil
+	}
+	var addrs []string
+	for _, addr := range strings.Split(s, ",") {
+		addr = strings.TrimSpace(addr)
+		if addr != "" {
+			addrs = append(addrs, addr)
+		}
+	}
+	return addrs
 }
