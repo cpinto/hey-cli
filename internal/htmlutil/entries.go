@@ -10,11 +10,59 @@ import (
 )
 
 var (
-	entryBlockRe = regexp.MustCompile(`(?s)data-entry-id="(\d+)"`)
-	senderRe     = regexp.MustCompile(`id="sender_entry_(\d+)"[^>]*>\s*([^<]+?)\s*<`)
-	timeRe       = regexp.MustCompile(`<time[^>]*datetime="([^"]+)"`)
-	srcdocRe     = regexp.MustCompile(`(?s)srcdoc="([^"]*trix-content[^"]*)"`)
+	entryBlockRe     = regexp.MustCompile(`(?s)data-entry-id="(\d+)"`)
+	senderRe         = regexp.MustCompile(`id="sender_entry_(\d+)"[^>]*>\s*([^<]+?)\s*<`)
+	timeRe           = regexp.MustCompile(`<time[^>]*datetime="([^"]+)"`)
+	srcdocRe         = regexp.MustCompile(`(?s)srcdoc="([^"]*trix-content[^"]*)"`)
+	fullRecipientsRe = regexp.MustCompile(`(?s)entry__full-recipients[^>]*>(.*?)</span>`)
+	titleEmailRe     = regexp.MustCompile(`title="([^"]+)"`)
+	ccSplitRe        = regexp.MustCompile(`(CC:|BCC:)`)
 )
+
+// TopicAddressed holds the To, CC, and BCC recipients for a topic.
+type TopicAddressed struct {
+	To  []string
+	CC  []string
+	BCC []string
+}
+
+// ParseTopicAddressed extracts To/CC/BCC recipients from a topic's HTML page.
+func ParseTopicAddressed(html string) *TopicAddressed {
+	m := fullRecipientsRe.FindStringSubmatch(html)
+	if m == nil {
+		return &TopicAddressed{}
+	}
+	content := m[1]
+
+	result := &TopicAddressed{}
+	parts := ccSplitRe.Split(content, -1)
+	labels := ccSplitRe.FindAllString(content, -1)
+
+	// First part is always "to"
+	result.To = extractEmails(parts[0])
+	for i, label := range labels {
+		emails := extractEmails(parts[i+1])
+		switch label {
+		case "CC:":
+			result.CC = emails
+		case "BCC:":
+			result.BCC = emails
+		}
+	}
+	return result
+}
+
+func extractEmails(html string) []string {
+	matches := titleEmailRe.FindAllStringSubmatch(html, -1)
+	var addrs []string
+	for _, m := range matches {
+		addr := strings.TrimSpace(m[1])
+		if addr != "" && strings.Contains(addr, "@") {
+			addrs = append(addrs, addr)
+		}
+	}
+	return addrs
+}
 
 // ParseTopicEntriesHTML extracts structured entry data from the HTML page
 // served by /topics/{id}/entries. The JSON API does not return full entry

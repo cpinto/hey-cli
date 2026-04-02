@@ -46,11 +46,23 @@ func (c *replyCommand) run(cmd *cobra.Command, args []string) error {
 	}
 
 	ctx := cmd.Context()
-	resp, err := sdk.GetHTML(ctx, fmt.Sprintf("/topics/%d/entries", threadID))
+
+	// Fetch topic page to extract recipients (To/CC/BCC).
+	topicResp, err := sdk.GetHTML(ctx, fmt.Sprintf("/topics/%d", threadID))
 	if err != nil {
 		return convertSDKError(err)
 	}
-	entries := htmlutil.ParseTopicEntriesHTML(string(resp.Data))
+	addressed := htmlutil.ParseTopicAddressed(string(topicResp.Data))
+	if len(addressed.To) == 0 && len(addressed.CC) == 0 {
+		return output.ErrUsage("could not determine thread recipients")
+	}
+
+	// Fetch entries to find the latest entry ID for the reply.
+	entriesResp, err := sdk.GetHTML(ctx, fmt.Sprintf("/topics/%d/entries", threadID))
+	if err != nil {
+		return convertSDKError(err)
+	}
+	entries := htmlutil.ParseTopicEntriesHTML(string(entriesResp.Data))
 	if len(entries) == 0 {
 		return output.ErrNotFound("entries for thread", args[0])
 	}
@@ -78,7 +90,7 @@ func (c *replyCommand) run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if err = sdk.Entries().CreateReply(ctx, latestEntryID, message, nil, nil, nil); err != nil {
+	if err = sdk.Entries().CreateReply(ctx, latestEntryID, message, addressed.To, addressed.CC, addressed.BCC); err != nil {
 		return convertSDKError(err)
 	}
 
