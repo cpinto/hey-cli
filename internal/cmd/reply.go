@@ -76,7 +76,7 @@ func (c *replyCommand) run(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	if err = sdk.Entries().CreateReply(ctx, latestEntryID, message); err != nil {
+	if err = sdk.Entries().CreateReply(ctx, latestEntryID, message, nil, nil, nil); err != nil {
 		return convertSDKError(err)
 	}
 
