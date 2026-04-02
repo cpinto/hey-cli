@@ -53,7 +53,7 @@ func (c *replyCommand) run(cmd *cobra.Command, args []string) error {
 		return convertSDKError(err)
 	}
 	addressed := htmlutil.ParseTopicAddressed(string(topicResp.Data))
-	if len(addressed.To) == 0 && len(addressed.CC) == 0 {
+	if len(addressed.To) == 0 && len(addressed.CC) == 0 && len(addressed.BCC) == 0 {
 		return output.ErrUsage("could not determine thread recipients")
 	}
 
