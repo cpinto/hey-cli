@@ -6,18 +6,17 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/net/html"
+
 	"github.com/basecamp/hey-cli/internal/models"
 )
 
 var (
-	entryBlockRe     = regexp.MustCompile(`(?s)data-entry-id="(\d+)"`)
-	senderRe         = regexp.MustCompile(`id="sender_entry_(\d+)"[^>]*>\s*([^<]+?)\s*<`)
-	senderEmailRe    = regexp.MustCompile(`(?s)sender_entry_(\d+).*?entry__sender-email[^>]*><span[^>]*>[^<]*</span>([^<]+)<`)
-	timeRe           = regexp.MustCompile(`<time[^>]*datetime="([^"]+)"`)
-	srcdocRe         = regexp.MustCompile(`(?s)srcdoc="([^"]*trix-content[^"]*)"`)
-	fullRecipientsRe = regexp.MustCompile(`(?s)entry__full-recipients[^>]*>(.*?)</span>`)
-	titleEmailRe     = regexp.MustCompile(`title="([^"]+)"`)
-	ccSplitRe        = regexp.MustCompile(`(CC:|BCC:)`)
+	entryBlockRe  = regexp.MustCompile(`(?s)data-entry-id="(\d+)"`)
+	senderRe      = regexp.MustCompile(`id="sender_entry_(\d+)"[^>]*>\s*([^<]+?)\s*<`)
+	senderEmailRe = regexp.MustCompile(`(?s)sender_entry_(\d+).*?entry__sender-email[^>]*><span[^>]*>[^<]*</span>([^<]+)<`)
+	timeRe        = regexp.MustCompile(`<time[^>]*datetime="([^"]+)"`)
+	srcdocRe      = regexp.MustCompile(`(?s)srcdoc="([^"]*trix-content[^"]*)"`)
 )
 
 // TopicAddressed holds the To, CC, and BCC recipients for a topic.
@@ -28,49 +27,103 @@ type TopicAddressed struct {
 }
 
 // ParseTopicAddressed extracts To/CC/BCC recipients from a topic's HTML page.
-func ParseTopicAddressed(html string) *TopicAddressed {
-	m := fullRecipientsRe.FindStringSubmatch(html)
-	if m == nil {
+// Unions recipients across every entry__full-recipients block so multi-entry
+// threads include people added to CC in later replies. Addresses are read
+// from title="…@…" attributes; buckets switch on "CC:" / "BCC:" text nodes
+// encountered in document order.
+func ParseTopicAddressed(htmlStr string) *TopicAddressed {
+	doc, err := html.Parse(strings.NewReader(htmlStr))
+	if err != nil {
 		return &TopicAddressed{}
 	}
-	content := m[1]
-
 	result := &TopicAddressed{}
-	parts := ccSplitRe.Split(content, -1)
-	labels := ccSplitRe.FindAllString(content, -1)
-
-	// First part is always "to"
-	result.To = extractEmails(parts[0])
-	for i, label := range labels {
-		emails := extractEmails(parts[i+1])
-		switch label {
-		case "CC:":
-			result.CC = emails
-		case "BCC:":
-			result.BCC = emails
-		}
-	}
+	toSeen, ccSeen, bccSeen := map[string]bool{}, map[string]bool{}, map[string]bool{}
+	forEachElementWithClass(doc, "entry__full-recipients", func(node *html.Node) {
+		addr := extractAddressed(node)
+		result.To = appendUnique(result.To, addr.To, toSeen)
+		result.CC = appendUnique(result.CC, addr.CC, ccSeen)
+		result.BCC = appendUnique(result.BCC, addr.BCC, bccSeen)
+	})
 	return result
 }
 
-func extractEmails(html string) []string {
-	matches := titleEmailRe.FindAllStringSubmatch(html, -1)
-	var addrs []string
-	for _, m := range matches {
-		addr := strings.TrimSpace(m[1])
-		if addr != "" && strings.Contains(addr, "@") {
-			addrs = append(addrs, addr)
+// extractAddressed walks an entry__full-recipients subtree in document order,
+// bucketing each title="…@…" attribute into To/CC/BCC. Bucket switches on
+// text nodes containing "BCC:" (checked first because "CC:" is a suffix) or
+// "CC:".
+func extractAddressed(root *html.Node) *TopicAddressed {
+	result := &TopicAddressed{}
+	bucket := &result.To
+	var walk func(*html.Node)
+	walk = func(n *html.Node) {
+		switch n.Type {
+		case html.TextNode:
+			switch {
+			case strings.Contains(n.Data, "BCC:"):
+				bucket = &result.BCC
+			case strings.Contains(n.Data, "CC:"):
+				bucket = &result.CC
+			}
+		case html.ElementNode:
+			for _, a := range n.Attr {
+				if a.Key == "title" {
+					v := strings.TrimSpace(a.Val)
+					if strings.Contains(v, "@") {
+						*bucket = append(*bucket, v)
+					}
+				}
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c)
 		}
 	}
-	return addrs
+	walk(root)
+	return result
+}
+
+// forEachElementWithClass invokes fn on every element node whose class
+// attribute contains the given class token (whitespace-separated).
+func forEachElementWithClass(root *html.Node, class string, fn func(*html.Node)) {
+	var walk func(*html.Node)
+	walk = func(n *html.Node) {
+		if n.Type == html.ElementNode {
+			for _, a := range n.Attr {
+				if a.Key == "class" {
+					for _, c := range strings.Fields(a.Val) {
+						if c == class {
+							fn(n)
+							break
+						}
+					}
+					break
+				}
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c)
+		}
+	}
+	walk(root)
+}
+
+func appendUnique(dst, src []string, seen map[string]bool) []string {
+	for _, v := range src {
+		if seen[v] {
+			continue
+		}
+		seen[v] = true
+		dst = append(dst, v)
+	}
+	return dst
 }
 
 // ParseTopicEntriesHTML extracts structured entry data from the HTML page
 // served by /topics/{id}/entries. The JSON API does not return full entry
 // bodies, so this HTML-based extraction is required.
-func ParseTopicEntriesHTML(html string) []models.Entry {
+func ParseTopicEntriesHTML(htmlStr string) []models.Entry {
 	// Find unique entry IDs in order
-	idMatches := entryBlockRe.FindAllStringSubmatch(html, -1)
+	idMatches := entryBlockRe.FindAllStringSubmatch(htmlStr, -1)
 	seen := map[string]bool{}
 	var entryIDs []string
 	for _, m := range idMatches {
@@ -82,13 +135,13 @@ func ParseTopicEntriesHTML(html string) []models.Entry {
 
 	// Build lookup maps
 	senders := map[string]string{}
-	for _, m := range senderRe.FindAllStringSubmatch(html, -1) {
+	for _, m := range senderRe.FindAllStringSubmatch(htmlStr, -1) {
 		if _, exists := senders[m[1]]; !exists {
 			senders[m[1]] = m[2]
 		}
 	}
 	senderEmails := map[string]string{}
-	for _, m := range senderEmailRe.FindAllStringSubmatch(html, -1) {
+	for _, m := range senderEmailRe.FindAllStringSubmatch(htmlStr, -1) {
 		if _, exists := senderEmails[m[1]]; !exists {
 			senderEmails[m[1]] = strings.TrimSpace(m[2])
 		}
@@ -98,47 +151,48 @@ func ParseTopicEntriesHTML(html string) []models.Entry {
 	entryTimes := map[string]string{}
 	for _, eid := range entryIDs {
 		anchor := fmt.Sprintf(`id="entry_%s"`, eid)
-		idx := strings.Index(html, anchor)
+		idx := strings.Index(htmlStr, anchor)
 		if idx < 0 {
 			continue
 		}
-		if m := timeRe.FindStringSubmatch(html[idx:]); m != nil {
+		if m := timeRe.FindStringSubmatch(htmlStr[idx:]); m != nil {
 			entryTimes[eid] = m[1]
 		}
 	}
 
-	// Associate recipients with entries by slicing between entry anchors.
+	// Associate recipients with entries by slicing between entry anchors and
+	// running the DOM-based recipient parser on each slice. The flat list
+	// unions To/CC/BCC (the entries view doesn't distinguish buckets).
 	entryRecipients := map[string][]models.Contact{}
 	for i, eid := range entryIDs {
 		anchor := fmt.Sprintf(`id="entry_%s"`, eid)
-		start := strings.Index(html, anchor)
+		start := strings.Index(htmlStr, anchor)
 		if start < 0 {
 			continue
 		}
-		end := len(html)
+		end := len(htmlStr)
 		if i+1 < len(entryIDs) {
 			nextAnchor := fmt.Sprintf(`id="entry_%s"`, entryIDs[i+1])
-			if n := strings.Index(html[start:], nextAnchor); n > 0 {
+			if n := strings.Index(htmlStr[start:], nextAnchor); n > 0 {
 				end = start + n
 			}
 		}
-		m := fullRecipientsRe.FindStringSubmatch(html[start:end])
-		if m == nil {
-			continue
-		}
-		seen := map[string]bool{}
-		for _, addr := range extractEmails(m[1]) {
-			if seen[addr] {
-				continue
+		addr := ParseTopicAddressed(htmlStr[start:end])
+		localSeen := map[string]bool{}
+		for _, bucket := range [][]string{addr.To, addr.CC, addr.BCC} {
+			for _, a := range bucket {
+				if localSeen[a] {
+					continue
+				}
+				localSeen[a] = true
+				entryRecipients[eid] = append(entryRecipients[eid], models.Contact{EmailAddress: a})
 			}
-			seen[addr] = true
-			entryRecipients[eid] = append(entryRecipients[eid], models.Contact{EmailAddress: addr})
 		}
 	}
 
 	// Extract bodies from srcdoc iframes - they appear in entry order
 	type body struct{ html, text string }
-	bodyMatches := srcdocRe.FindAllStringSubmatch(html, -1)
+	bodyMatches := srcdocRe.FindAllStringSubmatch(htmlStr, -1)
 	bodies := make([]body, 0, len(bodyMatches))
 	for _, m := range bodyMatches {
 		raw := m[1]
