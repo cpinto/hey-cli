@@ -28,6 +28,13 @@ triggers:
   - update event
   - delete event
   - schedule event
+  - schedule meeting
+  - invite to event
+  - invite to meeting
+  - add invitee
+  - add attendee
+  - who's invited
+  - meeting attendees
   # Todos
   - hey todo
   # Seen/unseen
@@ -339,6 +346,8 @@ hey event delete 123
 **`--invitee` semantics:** Email address to invite. Repeatable or comma-separated (`--invitee a@x.com --invitee b@x.com` ≡ `--invitee a@x.com,b@x.com`). On `event update`, passing `--invitee` **replaces the full invitee list** — anything not listed is removed. Omit `--invitee` to leave invitees untouched. The server emails each invitee.
 
 **Reading invitees:** They come back on each event in `hey recordings <calendar-id> --json` under the `attendances` array (`[{email_address, name, status, id}, ...]`); the `attendances_summary` field gives a human-readable rollup. There's no per-event fetch endpoint — filter recordings by event ID with jq.
+
+**Attendance `status` values:** `needs_action` (just invited, not yet responded), `accepted` ("Going"), `declined` ("Not going"), `tentative` ("Maybe"). The organizer also appears in `attendances_summary` even though they aren't in the `attendances` array — `attendances` lists invitees, not the host. Use `organizer` field on the event for the host.
 
 Use `hey calendars --json` to find calendar IDs, and `hey recordings <calendar-id>` to find existing event IDs.
 
