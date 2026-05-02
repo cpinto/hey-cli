@@ -74,6 +74,9 @@ hey reply 123 -m "Thanks!"        # reply to a thread (or omit -m to open $EDITO
 hey compose --to user@example.com --subject "Hello"  # compose a new message
 hey compose --to user@example.com --cc bob@example.com --bcc carol@example.org --subject "Hello"  # with CC/BCC
 hey drafts                         # list drafts
+hey attachments 123                # list attachments in a thread (per entry)
+hey attachments download 123       # download every attachment in the thread to ./
+hey attachments download 123 --entry 456 --index 1 --output ~/Downloads  # one specific file
 ```
 
 ### Calendars

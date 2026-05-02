@@ -76,6 +76,17 @@ func (c *topicCommand) run(cmd *cobra.Command, args []string) error {
 				fmt.Fprintln(w)
 				fmt.Fprintln(w, e.Body)
 			}
+			if len(e.Attachments) > 0 {
+				fmt.Fprintln(w)
+				fmt.Fprintln(w, "Attachments:")
+				for j, att := range e.Attachments {
+					ct := att.ContentType
+					if ct == "" {
+						ct = "?"
+					}
+					fmt.Fprintf(w, "  [%d] %s (%s)\n", j+1, att.Filename, ct)
+				}
+			}
 			fmt.Fprintln(w)
 		}
 		return nil

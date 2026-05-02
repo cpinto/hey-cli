@@ -10,6 +10,11 @@ hey --quiet
 hey --stats
 hey --styled
 hey --verbose
+hey attachments
+hey attachments download
+hey attachments download --entry
+hey attachments download --index
+hey attachments download --output
 hey auth
 hey auth login
 hey auth login --cookie

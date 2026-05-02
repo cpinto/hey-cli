@@ -15,6 +15,10 @@ triggers:
   - hey reply
   - hey compose
   - hey drafts
+  - hey attachments
+  - download attachment
+  - download attachments
+  - save attachment
   # Calendar actions
   - hey calendars
   - hey recordings
@@ -89,6 +93,9 @@ CLI for HEY email: mailboxes, email threads, replies, compose, calendars, todos,
 | Compose email | `hey compose --to user@example.com --subject "Hello"` |
 | Compose with CC/BCC | `hey compose --to alice@example.com --cc bob@example.com --bcc carol@example.org --subject "Hello"` |
 | List drafts | `hey drafts --json` |
+| List attachments in a thread | `hey attachments <topic_id> --json` |
+| Download all attachments in a thread | `hey attachments download <topic_id> --output ~/Downloads` |
+| Download a specific attachment | `hey attachments download <topic_id> --entry <entry_id> --index 1 --output ~/Downloads` |
 | List calendars | `hey calendars --json` |
 | List calendar events | `hey recordings 123 --json` |
 | List todos | `hey todo list --json` |
@@ -120,6 +127,8 @@ Want to read email?
 ├── Which mailbox? → hey boxes --json
 ├── List emails in box? → hey box <name|id> --json
 ├── Read full thread? → hey threads <topic_id> --json
+├── List attachments? → hey attachments <topic_id> --json
+├── Download attachments? → hey attachments download <topic_id> --output <dir>
 ├── Mark as seen? → hey seen <posting-id>
 ├── Mark as unseen? → hey unseen <posting-id>
 └── Launch interactive UI? → hey (no args, launches TUI)
@@ -182,6 +191,22 @@ hey compose --to user@example.com --subject "Hi" -m "Body"  # With inline body
 hey compose --to alice@example.com --cc bob@example.com --bcc carol@example.org --subject "Project update" -m "Body"  # With CC/BCC
 hey compose --subject "Update" --thread-id 12345 -m "msg"   # Post to existing thread
 ```
+
+### Email - Attachments
+
+```bash
+hey attachments <topic_id> --json                                              # List attachments grouped by entry
+hey attachments download <topic_id>                                            # Download all attachments to ./
+hey attachments download <topic_id> --output ~/Downloads                       # Download all to a directory
+hey attachments download <topic_id> --entry <entry_id> --output ~/Downloads    # Only attachments from one entry
+hey attachments download <topic_id> --entry <entry_id> --index 1 --output ~/Downloads  # One specific attachment
+```
+
+**ID note:** `hey attachments` takes the **topic ID** (same as `hey threads`). Each entry's attachments come back with a 1-based `index` starting at 1 within that entry. `--index` requires `--entry` because indices reset per entry.
+
+**Response format:** `hey attachments` returns an array of `{entry_id, from, created_at, attachments: [{url, filename, content_type}]}`. Entries with no attachments are omitted. `hey attachments download` returns an array of `{path, filename, entry_id, bytes}` for each saved file. Output directory is created if missing; existing files get a `-1`, `-2`, ... suffix rather than being overwritten.
+
+**What's downloadable:** Real MIME attachments (PDFs, docs, archives) surfaced via HEY's "files" panel, plus Trix inline figures embedded in the email body (typically images). `<action-text-attachment>` markers without a download URL are skipped.
 
 ### Email - Seen/Unseen
 

@@ -107,6 +107,25 @@ func forEachElementWithClass(root *html.Node, class string, fn func(*html.Node))
 	walk(root)
 }
 
+// mergeAttachments concatenates two attachment lists, deduplicating by URL.
+// Trix figures and MIME attachments are conceptually distinct sources, but a
+// single file occasionally appears in both — keep the first occurrence so
+// inline-image metadata (real ContentType) wins over the file-browser entry.
+func mergeAttachments(a, b []models.Attachment) []models.Attachment {
+	seen := make(map[string]bool, len(a)+len(b))
+	out := make([]models.Attachment, 0, len(a)+len(b))
+	for _, list := range [][]models.Attachment{a, b} {
+		for _, att := range list {
+			if seen[att.URL] {
+				continue
+			}
+			seen[att.URL] = true
+			out = append(out, att)
+		}
+	}
+	return out
+}
+
 func appendUnique(dst, src []string, seen map[string]bool) []string {
 	for _, v := range src {
 		if seen[v] {
@@ -160,10 +179,13 @@ func ParseTopicEntriesHTML(htmlStr string) []models.Entry {
 		}
 	}
 
-	// Associate recipients with entries by slicing between entry anchors and
-	// running the DOM-based recipient parser on each slice. The flat list
-	// unions To/CC/BCC (the entries view doesn't distinguish buckets).
+	// Associate recipients and file attachments with entries by slicing between
+	// entry anchors and running DOM-based parsers on each slice. Recipients
+	// union To/CC/BCC (the entries view doesn't distinguish buckets); file
+	// attachments are MIME files surfaced via <div class="attachments-browser">
+	// inside each <article>.
 	entryRecipients := map[string][]models.Contact{}
+	entryFiles := map[string][]models.Attachment{}
 	for i, eid := range entryIDs {
 		anchor := fmt.Sprintf(`id="entry_%s"`, eid)
 		start := strings.Index(htmlStr, anchor)
@@ -177,7 +199,8 @@ func ParseTopicEntriesHTML(htmlStr string) []models.Entry {
 				end = start + n
 			}
 		}
-		addr := ParseTopicAddressed(htmlStr[start:end])
+		slice := htmlStr[start:end]
+		addr := ParseTopicAddressed(slice)
 		localSeen := map[string]bool{}
 		for _, bucket := range [][]string{addr.To, addr.CC, addr.BCC} {
 			for _, a := range bucket {
@@ -188,6 +211,7 @@ func ParseTopicEntriesHTML(htmlStr string) []models.Entry {
 				entryRecipients[eid] = append(entryRecipients[eid], models.Contact{EmailAddress: a})
 			}
 		}
+		entryFiles[eid] = ExtractFileAttachments(slice)
 	}
 
 	// Extract bodies from srcdoc iframes - they appear in entry order
@@ -220,6 +244,10 @@ func ParseTopicEntriesHTML(htmlStr string) []models.Entry {
 		if i < len(bodies) {
 			e.Body = bodies[i].text
 			e.BodyHTML = bodies[i].html
+			e.Attachments = ExtractAttachments(bodies[i].html)
+		}
+		if files := entryFiles[eid]; len(files) > 0 {
+			e.Attachments = mergeAttachments(e.Attachments, files)
 		}
 		entries = append(entries, e)
 	}

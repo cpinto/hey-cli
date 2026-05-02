@@ -173,6 +173,82 @@ func TestParseTopicAddressedSupportsSpanAsRecipient(t *testing.T) {
 	}
 }
 
+func TestParseTopicEntriesHTMLAttachments(t *testing.T) {
+	// Entry bodies are embedded as HTML-entity-encoded strings inside an iframe
+	// srcdoc attribute, marked by the trix-content class. ExtractAttachments
+	// runs against the decoded body and should populate Entry.Attachments per
+	// entry. Entry 1 has one attachment; entry 2 has none.
+	body1 := `&lt;div class=&quot;trix-content&quot;&gt;` +
+		`&lt;p&gt;Hello&lt;/p&gt;` +
+		`&lt;figure data-trix-attachment=&#39;{&quot;url&quot;:&quot;/rails/blobs/abc/photo.png&quot;,&quot;filename&quot;:&quot;photo.png&quot;,&quot;contentType&quot;:&quot;image/png&quot;}&#39;&gt;&lt;/figure&gt;` +
+		`&lt;/div&gt;`
+	body2 := `&lt;div class=&quot;trix-content&quot;&gt;&lt;p&gt;No attachments&lt;/p&gt;&lt;/div&gt;`
+
+	htmlStr := `
+<article data-entry-id="1" id="entry_1">
+  <iframe srcdoc="` + body1 + `"></iframe>
+</article>
+<article data-entry-id="2" id="entry_2">
+  <iframe srcdoc="` + body2 + `"></iframe>
+</article>`
+
+	got := ParseTopicEntriesHTML(htmlStr)
+	if len(got) != 2 {
+		t.Fatalf("got %d entries, want 2", len(got))
+	}
+
+	if len(got[0].Attachments) != 1 {
+		t.Fatalf("entry 1: got %d attachments, want 1 (body=%q)", len(got[0].Attachments), got[0].BodyHTML)
+	}
+	att := got[0].Attachments[0]
+	if att.Filename != "photo.png" {
+		t.Errorf("entry 1 filename = %q, want photo.png", att.Filename)
+	}
+	if att.URL != "/rails/blobs/abc/photo.png" {
+		t.Errorf("entry 1 URL = %q, want /rails/blobs/abc/photo.png", att.URL)
+	}
+	if att.ContentType != "image/png" {
+		t.Errorf("entry 1 content type = %q, want image/png", att.ContentType)
+	}
+
+	if len(got[1].Attachments) != 0 {
+		t.Errorf("entry 2: got %d attachments, want 0", len(got[1].Attachments))
+	}
+}
+
+func TestParseTopicEntriesHTMLFileAttachmentsPerEntry(t *testing.T) {
+	// File attachments live in <div class="attachments-browser"> blocks inside
+	// each entry's <article>. Each entry gets only its own attachments.
+	htmlStr := `
+<article data-entry-id="1" id="entry_1">
+  <message-content data-entry-id="1"></message-content>
+  <div class="attachments-browser">
+    <figure class="attachment attachment--pdf">
+      <a download="invoice-a.pdf" data-filetype="pdf" href="/rails/active_storage/blobs/redirect/a/invoice-a.pdf"></a>
+    </figure>
+  </div>
+</article>
+<article data-entry-id="2" id="entry_2">
+  <message-content data-entry-id="2"></message-content>
+  <div class="attachments-browser">
+    <figure class="attachment attachment--doc">
+      <a download="contract.docx" data-filetype="docx" href="/rails/active_storage/blobs/redirect/b/contract.docx"></a>
+    </figure>
+  </div>
+</article>`
+
+	got := ParseTopicEntriesHTML(htmlStr)
+	if len(got) != 2 {
+		t.Fatalf("got %d entries, want 2", len(got))
+	}
+	if len(got[0].Attachments) != 1 || got[0].Attachments[0].Filename != "invoice-a.pdf" {
+		t.Errorf("entry 1 attachments = %+v", got[0].Attachments)
+	}
+	if len(got[1].Attachments) != 1 || got[1].Attachments[0].Filename != "contract.docx" {
+		t.Errorf("entry 2 attachments = %+v", got[1].Attachments)
+	}
+}
+
 func TestParseTopicEntriesHTMLRecipientsPerEntry(t *testing.T) {
 	// Each entry's recipients are scoped to that entry. This is a synthetic
 	// fixture mirroring the structure of /topics/{id}/entries output.

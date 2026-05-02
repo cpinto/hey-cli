@@ -13,15 +13,22 @@ type Topic struct {
 }
 
 type Entry struct {
-	ID                    int64     `json:"id"`
-	CreatedAt             string    `json:"created_at"`
-	UpdatedAt             string    `json:"updated_at"`
-	Creator               Contact   `json:"creator"`
-	AlternativeSenderName string    `json:"alternative_sender_name"`
-	Summary               string    `json:"summary"`
-	Kind                  string    `json:"kind"`
-	AppURL                string    `json:"app_url"`
-	Body                  string    `json:"body,omitempty"`
-	BodyHTML              string    `json:"-"`
-	Recipients            []Contact `json:"recipients,omitempty"`
+	ID                    int64        `json:"id"`
+	CreatedAt             string       `json:"created_at"`
+	UpdatedAt             string       `json:"updated_at"`
+	Creator               Contact      `json:"creator"`
+	AlternativeSenderName string       `json:"alternative_sender_name"`
+	Summary               string       `json:"summary"`
+	Kind                  string       `json:"kind"`
+	AppURL                string       `json:"app_url"`
+	Body                  string       `json:"body,omitempty"`
+	BodyHTML              string       `json:"-"`
+	Recipients            []Contact    `json:"recipients,omitempty"`
+	Attachments           []Attachment `json:"attachments,omitempty"`
+}
+
+type Attachment struct {
+	URL         string `json:"url"`
+	Filename    string `json:"filename"`
+	ContentType string `json:"content_type,omitempty"`
 }
