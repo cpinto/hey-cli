@@ -2,7 +2,7 @@
 	race-test vuln secrets replace-check check-toolchain check security \
 	release-check release bench bench-cpu bench-mem bench-save bench-compare \
 	collect-profile clean-pgo check-surface check-surface-compat tools clean \
-	install help
+	install cowork-bundle help
 
 BINARY := $(CURDIR)/bin/hey
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
@@ -49,6 +49,9 @@ help:
 	@echo "  make check-surface        Generate CLI surface snapshot"
 	@echo "  make check-surface-compat Compare surface against previous tag"
 	@echo "  make tools                Install dev tools"
+	@echo ""
+	@echo "  make cowork-bundle        Build skill zip for Claude Desktop cowork"
+	@echo "                            (NO_CREDS=1 to skip credential bundling)"
 
 # Toolchain guard — fails fast when PATH go and GOROOT go disagree
 check-toolchain:
@@ -260,6 +263,18 @@ clean:
 # Install binary to /usr/local/bin
 install: build
 	sudo install $(BINARY) /usr/local/bin/hey
+
+# Build a self-contained skill bundle for Claude Desktop's cowork sandbox.
+# Cross-compiles Linux binaries, transforms SKILL.md for sh-prefixed
+# dispatcher invocations, optionally embeds OAuth tokens from the keychain,
+# and emits bin/hey-skill.zip ready to upload via Skills + button.
+# Pass NO_CREDS=1 to produce a shareable bundle without credentials.
+cowork-bundle:
+	@if [ "$${NO_CREDS:-0}" = "1" ]; then \
+		scripts/cowork-bundle.sh --no-creds; \
+	else \
+		scripts/cowork-bundle.sh; \
+	fi
 
 # Tidy dependencies
 tidy:
