@@ -54,6 +54,7 @@ hey event create --all-day
 hey event create --calendar-id
 hey event create --end-time
 hey event create --ends-at
+hey event create --invitee
 hey event create --reminder
 hey event create --start-time
 hey event create --starts-at
@@ -64,6 +65,7 @@ hey event update
 hey event update --all-day
 hey event update --end-time
 hey event update --ends-at
+hey event update --invitee
 hey event update --reminder
 hey event update --start-time
 hey event update --starts-at

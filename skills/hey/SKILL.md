@@ -134,7 +134,10 @@ List commands (`box`, `boxes`, `drafts`, `recordings`, `todo list`, `timetrack l
 | List events in date range | `hey recordings 123 --starts-on 2026-01-01 --ends-on 2026-01-31 --json` |
 | Create timed event | `hey event create "Standup" --calendar-id 1 --starts-at 2026-01-20 --start-time 09:00 --end-time 09:30 --timezone America/New_York` |
 | Create all-day event | `hey event create "Day off" --calendar-id 1 --starts-at 2026-01-20 --all-day` |
+| Create event with invitees | `hey event create "1:1" --calendar-id 1 --starts-at 2026-01-20 --start-time 10:00 --end-time 10:30 --timezone America/New_York --invitee alice@example.com --invitee bob@example.com` |
 | Update event | `hey event update 123 --title "New title"` |
+| Replace invitees on update | `hey event update 123 --invitee carol@example.com` |
+| Read who's invited | `hey recordings <calendar-id> --json` (each event has an `attendances` array with email + status) |
 | Delete event | `hey event delete 123` |
 | List todos | `hey todo list --json` |
 | Add todo | `hey todo add "Buy milk"` |
@@ -213,7 +216,10 @@ Want to work with the calendar?
 │   └── Custom range? → add --starts-on YYYY-MM-DD --ends-on YYYY-MM-DD
 ├── Create timed event? → hey event create "<title>" --calendar-id <id> --starts-at YYYY-MM-DD --start-time HH:MM --end-time HH:MM --timezone <iana>
 ├── Create all-day event? → hey event create "<title>" --calendar-id <id> --starts-at YYYY-MM-DD --all-day
+├── Invite people? → add --invitee email@example.com (repeat or comma-separate)
+├── Read who's invited? → hey recordings <calendar-id> --json (look at each event's attendances[])
 ├── Update event? → hey event update <id> [flags]
+├── Replace invitees? → hey event update <id> --invitee new@example.com  (drops everyone not listed)
 └── Delete event? → hey event delete <id>
 ```
 
@@ -319,14 +325,20 @@ hey recordings 123 --all --json               # Fetch every page
 hey event create "Team standup" --calendar-id 1 --starts-at 2026-01-20 --start-time 09:00 --end-time 09:30 --timezone America/New_York
 hey event create "Day off" --calendar-id 1 --starts-at 2026-01-20 --all-day
 hey event create "Lunch" --calendar-id 1 --starts-at 2026-01-20 --start-time 12:00 --end-time 13:00 --timezone America/New_York --reminder 15m --reminder 5m
+hey event create "1:1" --calendar-id 1 --starts-at 2026-01-20 --start-time 10:00 --end-time 10:30 --timezone America/New_York --invitee alice@example.com --invitee bob@example.com
 hey event update 123 --title "New title"
 hey event update 123 --starts-at 2026-01-21 --start-time 10:00 --end-time 11:00
+hey event update 123 --invitee carol@example.com  # replaces full invitee list
 hey event delete 123
 ```
 
 **Required flags for `event create`:** `--calendar-id`, `--starts-at` (YYYY-MM-DD), and either `--all-day` or the trio `--start-time` / `--end-time` / `--timezone` (HH:MM, IANA tz). Title can be passed positionally or via `-t/--title`. `--reminder` accepts Go durations (`15m`, `1h`, `1d`) and may be repeated.
 
 **Required for `event update`:** the event ID (positional). Any field flag is optional; pass only what's changing. Use `--all-day=false` to convert an all-day event back to timed.
+
+**`--invitee` semantics:** Email address to invite. Repeatable or comma-separated (`--invitee a@x.com --invitee b@x.com` ≡ `--invitee a@x.com,b@x.com`). On `event update`, passing `--invitee` **replaces the full invitee list** — anything not listed is removed. Omit `--invitee` to leave invitees untouched. The server emails each invitee.
+
+**Reading invitees:** They come back on each event in `hey recordings <calendar-id> --json` under the `attendances` array (`[{email_address, name, status, id}, ...]`); the `attendances_summary` field gives a human-readable rollup. There's no per-event fetch endpoint — filter recordings by event ID with jq.
 
 Use `hey calendars --json` to find calendar IDs, and `hey recordings <calendar-id>` to find existing event IDs.
 

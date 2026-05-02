@@ -22,7 +22,7 @@ func newEventCommand() *eventCommand {
 		Use:   "event",
 		Short: "Manage calendar events",
 		Annotations: map[string]string{
-			"agent_notes": "Subcommands: create, update, delete. Use calendar ID from hey calendars and event IDs from hey recordings.",
+			"agent_notes": "Subcommands: create, update, delete. Use calendar ID from hey calendars and event IDs from hey recordings. --invitee flag (repeatable) sends invitations; on update it replaces the full invitee list. Read invitees back via hey recordings <calendar-id> --json (each event's `attendances` array).",
 		},
 	}
 
@@ -46,6 +46,7 @@ type eventCreateCommand struct {
 	endTime    string
 	timeZone   string
 	reminders  []string
+	invitees   []string
 }
 
 func newEventCreateCommand() *eventCreateCommand {
@@ -55,7 +56,8 @@ func newEventCreateCommand() *eventCreateCommand {
 		Short: "Create a calendar event",
 		Example: `  hey event create "Team standup" --calendar-id 1 --starts-at 2024-01-20 --start-time 09:00 --end-time 09:30 --timezone America/New_York
   hey event create -t "Day off" --calendar-id 1 --starts-at 2024-01-20 --all-day
-  hey event create "Lunch" --calendar-id 1 --starts-at 2024-01-20 --start-time 12:00 --end-time 13:00 --timezone America/New_York --reminder 15m --reminder 5m`,
+  hey event create "Lunch" --calendar-id 1 --starts-at 2024-01-20 --start-time 12:00 --end-time 13:00 --timezone America/New_York --reminder 15m --reminder 5m
+  hey event create "1:1" --calendar-id 1 --starts-at 2024-01-20 --start-time 10:00 --end-time 10:30 --timezone Europe/Lisbon --invitee alice@example.com --invitee bob@example.com`,
 		RunE: c.run,
 		Args: cobra.MaximumNArgs(1),
 	}
@@ -69,6 +71,7 @@ func newEventCreateCommand() *eventCreateCommand {
 	c.cmd.Flags().StringVar(&c.endTime, "end-time", "", "End time (HH:MM, required for timed events)")
 	c.cmd.Flags().StringVar(&c.timeZone, "timezone", "", "IANA timezone (e.g. America/New_York, required for timed events)")
 	c.cmd.Flags().StringSliceVar(&c.reminders, "reminder", nil, "Reminder duration before event (e.g. 15m, 1h), can be repeated")
+	c.cmd.Flags().StringSliceVar(&c.invitees, "invitee", nil, "Email address to invite (repeat or comma-separate for multiple)")
 
 	return c
 }
@@ -128,6 +131,7 @@ func (c *eventCreateCommand) run(cmd *cobra.Command, args []string) error {
 		EndTime:    c.endTime,
 		TimeZone:   c.timeZone,
 		Reminders:  reminders,
+		Invitees:   c.invitees,
 	})
 	if err != nil {
 		return convertSDKError(err)
@@ -153,6 +157,7 @@ type eventUpdateCommand struct {
 	endTime   string
 	timeZone  string
 	reminders []string
+	invitees  []string
 }
 
 func newEventUpdateCommand() *eventUpdateCommand {
@@ -162,7 +167,8 @@ func newEventUpdateCommand() *eventUpdateCommand {
 		Short: "Update a calendar event",
 		Example: `  hey event update 123 --title "New title"
   hey event update 123 --starts-at 2024-01-21 --start-time 10:00 --end-time 11:00
-  hey event update 123 --all-day`,
+  hey event update 123 --all-day
+  hey event update 123 --invitee alice@example.com --invitee bob@example.com  # replaces the full invitee list`,
 		RunE: c.run,
 		Args: usageExactOneArg(),
 	}
@@ -174,6 +180,7 @@ func newEventUpdateCommand() *eventUpdateCommand {
 	c.cmd.Flags().StringVar(&c.endTime, "end-time", "", "End time (HH:MM)")
 	c.cmd.Flags().StringVar(&c.timeZone, "timezone", "", "IANA timezone (e.g. America/New_York)")
 	c.cmd.Flags().StringSliceVar(&c.reminders, "reminder", nil, "Reminder duration before event (e.g. 15m, 1h), can be repeated")
+	c.cmd.Flags().StringSliceVar(&c.invitees, "invitee", nil, "Email address to invite — replaces the full invitee list (repeat or comma-separate)")
 
 	// --all-day is a tristate: unset means don't change, --all-day means true, --no-all-day means false.
 	// We handle this by checking cmd.Flags().Changed("all-day").
@@ -222,6 +229,9 @@ func (c *eventUpdateCommand) run(cmd *cobra.Command, args []string) error {
 			return rerr
 		}
 		params.Reminders = reminders
+	}
+	if cmd.Flags().Changed("invitee") {
+		params.Invitees = c.invitees
 	}
 
 	ctx := cmd.Context()

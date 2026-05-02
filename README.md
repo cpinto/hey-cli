@@ -84,6 +84,9 @@ hey attachments download 123 --entry 456 --index 1 --output ~/Downloads  # one s
 ```bash
 hey calendars                      # list calendars
 hey recordings 1 --starts-on 2026-01-01 --ends-on 2026-01-31  # list events in a calendar
+hey event create "1:1" --calendar-id 1 --starts-at 2026-01-20 --start-time 10:00 --end-time 10:30 --timezone America/New_York --invitee alice@example.com --invitee bob@example.com
+hey event update 123 --invitee carol@example.com  # replaces full invitee list
+hey event delete 123
 ```
 
 ### Todos
